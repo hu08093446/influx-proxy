@@ -38,6 +38,7 @@ func printVersion() {
 	fmt.Printf("OS/Arch:    %s/%s\n", runtime.GOOS, runtime.GOARCH)
 }
 
+// 添加源码注释
 func main() {
 	if version {
 		printVersion()
