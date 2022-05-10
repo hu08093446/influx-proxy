@@ -22,11 +22,14 @@ var (
 	version    bool
 )
 
+// 这里使用了flag库解析用户执行程序时在命令行的输入，使用解析的结果来初始化变量
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 	log.SetOutput(os.Stdout)
 	flag.StringVar(&configFile, "config", "proxy.json", "proxy config file with json/yaml/toml format")
 	flag.BoolVar(&version, "version", false, "proxy version")
+
+	// 这里的Parse()函数时必须的，不执行的话，变量设置就不起作用
 	flag.Parse()
 }
 
@@ -46,6 +49,7 @@ func main() {
 		return
 	}
 
+	// 这里的configFile时在命令行通过-config制定的
 	cfg, err := backend.NewFileConfig(configFile)
 	if err != nil {
 		fmt.Printf("illegal config file: %s\n", err)
