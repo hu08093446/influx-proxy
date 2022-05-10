@@ -59,6 +59,7 @@ func NewHttpService(cfg *backend.ProxyConfig) (hs *HttpService) { // nolint:goli
 	return
 }
 
+// 这里对监听的URL进行了配置
 func (hs *HttpService) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/ping", hs.HandlerPing)
 	mux.HandleFunc("/query", hs.HandlerQuery)

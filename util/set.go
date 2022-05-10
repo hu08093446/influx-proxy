@@ -4,6 +4,7 @@
 
 package util
 
+// 这里使用map自定义了一个类似Jav的set类型
 // non-thread-safe set
 type Set map[string]bool
 

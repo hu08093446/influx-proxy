@@ -58,6 +58,8 @@ func main() {
 	log.Printf("version: %s, commit: %s, build: %s", backend.Version, backend.GitCommit, backend.BuildTime)
 	cfg.PrintSummary()
 
+	// 下面的操作是启动了一个http服务器
+	// 相关内容可以参考：https://www.jianshu.com/p/16210100d43d
 	mux := http.NewServeMux()
 	service.NewHttpService(cfg).Register(mux)
 

@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// todo 这里是直接初始化为字符串了吗？ 为啥没用":="这个操作符？
 var (
 	Version   = "not build"
 	GitCommit = "not build"
@@ -42,6 +43,8 @@ type CircleConfig struct {
 }
 
 type ProxyConfig struct {
+	// 后面的mapstructure是为了和proxy.json中的字段名进行对应
+	// 因为要想进行反序列化，属性名要大写，这样就和proxy.json中的字段不对应了，所以需要这样一个别名
 	Circles         []*CircleConfig `mapstructure:"circles"`
 	ListenAddr      string          `mapstructure:"listen_addr"`
 	DBList          []string        `mapstructure:"db_list"`
@@ -65,6 +68,7 @@ type ProxyConfig struct {
 	HTTPSKey        string          `mapstructure:"https_key"`
 }
 
+// 函数名时大写的，所以可以导出，可以通过包名加“.”在其他包中访问
 func NewFileConfig(cfgfile string) (cfg *ProxyConfig, err error) {
 	viper.SetConfigFile(cfgfile)
 	err = viper.ReadInConfig()
@@ -76,11 +80,15 @@ func NewFileConfig(cfgfile string) (cfg *ProxyConfig, err error) {
 	if err != nil {
 		return
 	}
+	// 如果有些配置用户没有使用，这里设置为默认值
 	cfg.setDefault()
 	err = cfg.checkConfig()
 	return
 }
 
+// 这里的setDefault是ProxyConfig结构体的方法
+// 因为golang没有类的概念，所以采取这种写法
+// 可以认为整个config.go就是一个ProxyConfig类
 func (cfg *ProxyConfig) setDefault() {
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":7076"
