@@ -81,6 +81,7 @@ func (ip *Proxy) GetHealth(stats bool) []interface{} {
 	health := make([]interface{}, len(ip.Circles))
 	for i, c := range ip.Circles {
 		wg.Add(1)
+		// 下面定义了一个匿名函数，同时启动了一个协程，最后面的括号里的i和c是传递的函数参数
 		go func(i int, c *Circle) {
 			defer wg.Done()
 			health[i] = c.GetHealth(stats)

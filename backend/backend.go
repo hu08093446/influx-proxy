@@ -336,6 +336,7 @@ func (ib *Backend) GetHealth(ic *Circle, withStats bool) interface{} {
 					incorrect++
 				}
 			}
+			// smap是一个嵌套的线程安全的map，key是string，value是map[string]int
 			smap.Store(db, map[string]int{
 				"measurements": len(measurements),
 				"inplace":      inplace,
@@ -345,8 +346,10 @@ func (ib *Backend) GetHealth(ic *Circle, withStats bool) interface{} {
 	}
 	wg.Wait()
 	healthy := true
+	// fixme 为什么这里要新建一个stats，直接用smap不好么？
 	stats := make(map[string]map[string]int)
 	smap.Range(func(k, v interface{}) bool {
+		// 下面这种写法是类型转换，将interface{}类型转为map
 		sm := v.(map[string]int)
 		stats[k.(string)] = sm
 		if sm["incorrect"] > 0 {
