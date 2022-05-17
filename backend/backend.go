@@ -21,6 +21,7 @@ type CacheBuffer struct {
 	Counter int
 }
 
+// 每个Backend对应一个InfluxDB示例
 type Backend struct {
 	*HttpBackend
 	fb   *FileBackend
@@ -43,8 +44,10 @@ func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
 		flushSize:       pxcfg.FlushSize,
 		flushTime:       pxcfg.FlushTime,
 		rewriteInterval: pxcfg.RewriteInterval,
+		// fixme 这里的定时器是干嘛的？
 		rewriteTicker:   time.NewTicker(time.Duration(pxcfg.RewriteInterval) * time.Second),
 		chWrite:         make(chan *LinePoint, 16),
+		// fixme 这个map结构是啥样的？
 		buffers:         make(map[string]map[string]*CacheBuffer),
 	}
 	ib.running.Store(true)
@@ -59,6 +62,7 @@ func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
 		panic(err)
 	}
 
+	// fixme 这个协程的工作内容待研究
 	go ib.worker()
 	return
 }

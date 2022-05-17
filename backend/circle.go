@@ -15,6 +15,7 @@ type Circle struct {
 	CircleId     int // nolint:golint
 	Name         string
 	Backends     []*Backend
+	// 这里的router和下面的mapToBackend是配合使用的，根据router的一致性hash得到key，然后mapToBackend应用key得到value
 	router       *consistent.Consistent
 	routerCache  sync.Map
 	mapToBackend map[string]*Backend
@@ -22,12 +23,15 @@ type Circle struct {
 
 func NewCircle(cfg *CircleConfig, pxcfg *ProxyConfig, circleId int) (ic *Circle) { // nolint:golint
 	ic = &Circle{
+		// 这里的CircleId其实就是配置文件中的数组下标索引
 		CircleId:     circleId,
 		Name:         cfg.Name,
 		Backends:     make([]*Backend, len(cfg.Backends)),
+		// 一致性哈希
 		router:       consistent.New(),
 		mapToBackend: make(map[string]*Backend),
 	}
+	// 意思是一个circle里面最多有256个InfluxDB实例
 	ic.router.NumberOfReplicas = 256
 	for idx, bkcfg := range cfg.Backends {
 		ic.Backends[idx] = NewBackend(bkcfg, pxcfg)

@@ -60,6 +60,8 @@ type HttpBackend struct { // nolint:golint
 }
 
 func NewHttpBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (hb *HttpBackend) { // nolint:golint
+	// 每个Backend对应一个InfluxDB实例
+	// 这里每个Backend都启动一个周期性执行的client，来跟proxy维持心跳状态
 	hb = NewSimpleHttpBackend(cfg)
 	hb.client = NewClient(strings.HasPrefix(cfg.Url, "https"), pxcfg.WriteTimeout)
 	hb.interval = pxcfg.CheckInterval
@@ -157,6 +159,7 @@ func (hb *HttpBackend) SetBasicAuth(req *http.Request) {
 }
 
 func (hb *HttpBackend) CheckActive() {
+	// 只要db实例还活着，就不停的循环去维持心跳状态
 	for hb.running.Load().(bool) {
 		hb.active.Store(hb.Ping())
 		time.Sleep(time.Duration(hb.interval) * time.Second)

@@ -19,8 +19,10 @@ import (
 	"github.com/influxdata/influxdb1-client/models"
 )
 
+// proxy.go可以理解为就是一个Proxy类
 type Proxy struct {
 	Circles []*Circle
+	// 如果配置没有做过修改，那dbSet是空的
 	dbSet   util.Set
 }
 
@@ -40,6 +42,7 @@ func NewProxy(cfg *ProxyConfig) (ip *Proxy) {
 	for _, db := range cfg.DBList {
 		ip.dbSet.Add(db)
 	}
+	// fixme 这里随机初始化是想干啥子？
 	rand.Seed(time.Now().UnixNano())
 	return
 }
