@@ -82,6 +82,7 @@ func (hs *HttpService) Register(mux *http.ServeMux) {
 
 func (hs *HttpService) HandlerPing(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
+	// ping的处理还真简单，就返回了一个版本号和204的状态码
 	hs.WriteHeader(w, 204)
 }
 
