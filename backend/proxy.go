@@ -172,6 +172,7 @@ func (ip *Proxy) WriteRow(line []byte, db, rp, precision string) {
 	}
 
 	key := GetKey(db, meas)
+	// 通过一致性哈希来计算出每个cicle中需要写入的backend
 	backends := ip.GetBackends(key)
 	if len(backends) == 0 {
 		log.Printf("write data error: can't get backends, db: %s, meas: %s", db, meas)

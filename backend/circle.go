@@ -65,7 +65,7 @@ func (ic *Circle) addRouter(be *Backend, idx int, hashKey string) {
 
 func (ic *Circle) GetBackend(key string) *Backend {
 	if be, ok := ic.routerCache.Load(key); ok {
-		// fixme 这是啥子写法？
+		// 类型转换操作
 		return be.(*Backend)
 	}
 	value, _ := ic.router.Get(key)

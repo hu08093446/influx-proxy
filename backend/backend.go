@@ -33,6 +33,7 @@ type Backend struct {
 	rewriteInterval int
 	rewriteTicker   *time.Ticker
 	chWrite         chan *LinePoint
+	// fixme 这个chTimer是干啥的？
 	chTimer         <-chan time.Time
 	buffers         map[string]map[string]*CacheBuffer
 	wg              sync.WaitGroup
@@ -44,7 +45,7 @@ func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
 		flushSize:       pxcfg.FlushSize,
 		flushTime:       pxcfg.FlushTime,
 		rewriteInterval: pxcfg.RewriteInterval,
-		// fixme 这里的定时器是干嘛的？
+		// 这里的定时器是定时检查有没有本地文件生成（请求的失败的时候会把请求写入文件），然后将文件中记录的请求进行重放
 		rewriteTicker:   time.NewTicker(time.Duration(pxcfg.RewriteInterval) * time.Second),
 		chWrite:         make(chan *LinePoint, 16),
 		// fixme 这个map结构是啥样的？
@@ -192,6 +193,7 @@ func (ib *Backend) FlushBuffer(db, rp string) {
 		}
 
 		b := bytes.Join([][]byte{[]byte(url.QueryEscape(db)), []byte(url.QueryEscape(rp)), p}, []byte{' '})
+		// 如果调用backend接口出现问题，这里会将请求写入到文件中
 		err = ib.fb.Write(b)
 		if err != nil {
 			log.Printf("write db and data to file error with db: %s, rp: %s, length: %d error: %s", db, rp, len(p), err)
