@@ -215,6 +215,7 @@ func (ip *Proxy) ReadProm(w http.ResponseWriter, req *http.Request, db, metric s
 	return ReadPromQL(w, req, ip, db, metric)
 }
 
+// fixme 这里函数好像没有地方调用啊
 func (ip *Proxy) Close() {
 	for _, c := range ip.Circles {
 		c.Close()

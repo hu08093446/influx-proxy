@@ -33,10 +33,13 @@ type Backend struct {
 	rewriteInterval int
 	rewriteTicker   *time.Ticker
 	chWrite         chan *LinePoint
-	// fixme 这个chTimer是干啥的？
-	chTimer         <-chan time.Time
-	buffers         map[string]map[string]*CacheBuffer
-	wg              sync.WaitGroup
+	// 目前看这个chTimer的作用是这样的：每次write请求在经过一致性hash分发之后不是立刻发送给influxDB实例的，而是在缓存里累积到一定数量才发送的，那如果发送速率比较慢
+	// 数量达不到，请求就会一直放在缓存里发布出去，这个时候就需要有时间限制，隔一段时间检查一次，保证累积在缓存中但是总数量没有达标的请求在延迟
+	// 较短的时间后也能发送出去   它这里没有使用定时器而使用这种方式是有道理的，个人任务是降低资源消耗，因为只要请求数量达标，这个chTimer就不会
+	// 被触发，只有在请求比较缓慢的时候才可能被触发。这个设计还是比较巧妙地。
+	chTimer <-chan time.Time
+	buffers map[string]map[string]*CacheBuffer
+	wg      sync.WaitGroup
 }
 
 func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
@@ -46,10 +49,10 @@ func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
 		flushTime:       pxcfg.FlushTime,
 		rewriteInterval: pxcfg.RewriteInterval,
 		// 这里的定时器是定时检查有没有本地文件生成（请求的失败的时候会把请求写入文件），然后将文件中记录的请求进行重放
-		rewriteTicker:   time.NewTicker(time.Duration(pxcfg.RewriteInterval) * time.Second),
-		chWrite:         make(chan *LinePoint, 16),
-		// fixme 这个map结构是啥样的？
-		buffers:         make(map[string]map[string]*CacheBuffer),
+		rewriteTicker: time.NewTicker(time.Duration(pxcfg.RewriteInterval) * time.Second),
+		chWrite:       make(chan *LinePoint, 16),
+		// 这里是个双层map，类似于Java中的Map<String, Map<String, *CacheBuffer>>
+		buffers: make(map[string]map[string]*CacheBuffer),
 	}
 	ib.running.Store(true)
 
@@ -165,6 +168,7 @@ func (ib *Backend) FlushBuffer(db, rp string) {
 	}
 
 	ib.wg.Add(1)
+	// 这里使用了ants协程库
 	ib.pool.Submit(func() {
 		defer ib.wg.Done()
 		var buf bytes.Buffer
@@ -348,7 +352,9 @@ func (ib *Backend) GetHealth(ic *Circle, withStats bool) interface{} {
 	}
 	wg.Wait()
 	healthy := true
-	// fixme 为什么这里要新建一个stats，直接用smap不好么？
+	// 为什么这里要新建一个stats，直接用smap不好么？
+	// 个人理解：stats这个map是要供外面使用的，而smap是上面多协程并发操纵用的，如果把smap直接返回了，那外部的协程和这里的协程就要互相争夺资源了
+	// 在能保证线程安全的情况下，需要加锁的东西要尽可能少的使用
 	stats := make(map[string]map[string]int)
 	smap.Range(func(k, v interface{}) bool {
 		// 下面这种写法是类型转换，将interface{}类型转为map
