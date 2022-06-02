@@ -15,7 +15,7 @@ import (
 
 // todo 这里是直接初始化为字符串了吗？ 为啥没用":="这个操作符？
 var (
-	Version   = "not build"
+	Version   = "1.1.1"
 	GitCommit = "not build"
 	BuildTime = "not build"
 )
