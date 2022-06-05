@@ -108,14 +108,17 @@ func (hs *HttpService) HandlerQuery(w http.ResponseWriter, req *http.Request) {
 
 func (hs *HttpService) HandlerWrite(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
+	// write必须是POST方式
 	if !hs.checkMethodAndAuth(w, req, "POST") {
 		return
 	}
 
+	// 获取时间精度
 	precision := req.URL.Query().Get("precision")
 	switch precision {
 	case "", "n", "ns", "u", "ms", "s", "m", "h":
 		// it's valid
+		// 默认是纳秒
 		if precision == "" {
 			precision = "ns"
 		}
@@ -129,7 +132,7 @@ func (hs *HttpService) HandlerWrite(w http.ResponseWriter, req *http.Request) {
 		hs.WriteError(w, req, 400, err.Error())
 		return
 	}
-	rp := req.URL.Query().Get("rp")
+	rp := req.URL.Query().Get("rp") // rp是数据保留策略
 
 	body := req.Body
 	if req.Header.Get("Content-Encoding") == "gzip" {
@@ -657,7 +660,7 @@ func (hs *HttpService) transAuth(text string) string {
 	return text
 }
 
-func (hs *HttpService) queryDB(req *http.Request, form bool) (string, error) {
+func (hs *HttpService) queryDB(req *http.Request, form bool) (string, error) { // 从请求中解析出是哪个数据库
 	var db string
 	if form {
 		db = req.FormValue("db")

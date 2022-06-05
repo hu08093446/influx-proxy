@@ -35,7 +35,7 @@ type Backend struct {
 	chWrite         chan *LinePoint
 	// 目前看这个chTimer的作用是这样的：每次write请求在经过一致性hash分发之后不是立刻发送给influxDB实例的，而是在缓存里累积到一定数量才发送的，那如果发送速率比较慢
 	// 数量达不到，请求就会一直放在缓存里发布出去，这个时候就需要有时间限制，隔一段时间检查一次，保证累积在缓存中但是总数量没有达标的请求在延迟
-	// 较短的时间后也能发送出去   它这里没有使用定时器而使用这种方式是有道理的，个人任务是降低资源消耗，因为只要请求数量达标，这个chTimer就不会
+	// 较短的时间后也能发送出去   它这里没有使用定时器而使用这种方式是有道理的，个人认为是降低资源消耗，因为只要请求数量达标，这个chTimer就不会
 	// 被触发，只有在请求比较缓慢的时候才可能被触发。这个设计还是比较巧妙地。
 	chTimer <-chan time.Time
 	buffers map[string]map[string]*CacheBuffer
@@ -161,6 +161,7 @@ func (ib *Backend) FlushBuffer(db, rp string) {
 		return
 	}
 	p := cb.Buffer.Bytes()
+	// 这里不存在线程安全问题，因为这里的执行者都是同一个协程
 	cb.Buffer = nil
 	cb.Counter = 0
 	if len(p) == 0 {
@@ -218,6 +219,7 @@ func (ib *Backend) Flush() {
 }
 
 func (ib *Backend) RewriteIdle() {
+	// 这里的rewriting可以保证：如果上一次重写没有写完，那么下一次不会开始
 	if !ib.IsRewriting() && ib.fb.IsData() {
 		ib.SetRewriting(true)
 		go ib.RewriteLoop()

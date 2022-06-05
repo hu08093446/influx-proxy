@@ -20,7 +20,7 @@ type LinePoint struct {
 	Line []byte
 }
 
-// fixme 这个方法是干啥的？
+// 获取measurement，不包括tag
 func ScanKey(pointbuf []byte) (key string, err error) {
 	buflen := len(pointbuf)
 	var b strings.Builder

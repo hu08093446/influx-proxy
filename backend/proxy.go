@@ -23,7 +23,7 @@ import (
 type Proxy struct {
 	Circles []*Circle
 	// 如果配置没有做过修改，那dbSet是空的
-	dbSet   util.Set
+	dbSet util.Set
 }
 
 func NewProxy(cfg *ProxyConfig) (ip *Proxy) {
@@ -59,7 +59,7 @@ func GetKey(db, meas string) string {
 func (ip *Proxy) GetBackends(key string) []*Backend {
 	backends := make([]*Backend, len(ip.Circles))
 	for i, circle := range ip.Circles {
-		backends[i] = circle.GetBackend(key)
+		backends[i] = circle.GetBackend(key) // 每个circle挑出来一个backend
 	}
 	return backends
 }
@@ -139,7 +139,7 @@ func (ip *Proxy) Write(p []byte, db, rp, precision string) (err error) {
 	buf := bytes.NewBuffer(p)
 	var line []byte
 	for {
-		line, err = buf.ReadBytes('\n')
+		line, err = buf.ReadBytes('\n') // 果然，数据是一行一行的处理的
 		switch err {
 		default:
 			log.Printf("error: %s", err)
@@ -147,7 +147,7 @@ func (ip *Proxy) Write(p []byte, db, rp, precision string) (err error) {
 		case io.EOF, nil:
 			err = nil
 		}
-		if len(line) == 0 {
+		if len(line) == 0 { // fixme 如果出现空行，后面的就不再读取了吗？
 			break
 		}
 		line = bytes.TrimSpace(line)
@@ -171,7 +171,7 @@ func (ip *Proxy) WriteRow(line []byte, db, rp, precision string) {
 		return
 	}
 
-	key := GetKey(db, meas)
+	key := GetKey(db, meas) // 它这个key是db和measurement的拼装
 	// 通过一致性哈希来计算出每个cicle中需要写入的backend
 	backends := ip.GetBackends(key)
 	if len(backends) == 0 {
