@@ -69,15 +69,15 @@ func FindEndWithQuote(data []byte, start int, endchar byte) (end int, unquoted [
 	return
 }
 
-func ScanToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func ScanToken(data []byte, atEOF bool) (advance int, token []byte, err error) { // 我理解这是一个分词函数
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
 
 	start := 0
-	for ; start < len(data) && data[start] == ' '; start++ {
+	for ; start < len(data) && data[start] == ' '; start++ { // 跨过空格符
 	}
-	if start == len(data) {
+	if start == len(data) { // 如果此时后面没有字符了，说明没有扫描到token(词)
 		return 0, nil, nil
 	}
 
@@ -153,7 +153,7 @@ func ScanToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return
 }
 
-func ScanTokens(q string, n int) (tokens []string) {
+func ScanTokens(q string, n int) (tokens []string) { // 分词
 	q = strings.TrimRight(strings.TrimSpace(q), "; ")
 	buf := bytes.NewBuffer([]byte(q))
 	scanner := bufio.NewScanner(buf)
@@ -195,7 +195,7 @@ func GetDatabaseFromTokens(tokens []string) (m string, err error) {
 func GetMeasurementFromTokens(tokens []string) (m string, err error) {
 	m, err = GetIdentifierFromTokens(tokens, []string{"from", "measurement"}, getMeasurement)
 	// handle subquery
-	if strings.HasPrefix(strings.ToLower(strings.TrimLeft(m, "( ")), "select") {
+	if strings.HasPrefix(strings.ToLower(strings.TrimLeft(m, "( ")), "select") { // 这里判断有没有子查询，子查询我还没有使用过
 		m, err = GetMeasurementFromInfluxQL(m[1 : len(m)-1])
 	}
 	return
@@ -293,7 +293,7 @@ func FindLastIndexWithIdent(m string) (i int) {
 }
 
 func CheckQuery(q string) (tokens []string, check bool, from bool) {
-	tokens = ScanTokens(q, 0)
+	tokens = ScanTokens(q, 0) // 这里进行分词的目的：1、是为了下面检查查询语句是否合法 2、判断是哪种类型的语句
 	stmt := strings.ToLower(tokens[0])
 	if stmt == "select" {
 		for i := 2; i < len(tokens); i++ {

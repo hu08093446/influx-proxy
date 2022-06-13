@@ -322,7 +322,7 @@ func (hb *HttpBackend) Query(req *http.Request, w http.ResponseWriter, decompres
 		return
 	}
 
-	q := strings.TrimSpace(req.FormValue("q"))
+	q := strings.TrimSpace(req.FormValue("q")) // 这里仅仅是为了打印日志
 	resp, err := hb.transport.RoundTrip(req)
 	if err != nil {
 		if req.Header.Get(HeaderQueryOrigin) != QueryParallel || err.Error() != "context canceled" {

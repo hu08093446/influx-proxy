@@ -660,7 +660,7 @@ func (hs *HttpService) transAuth(text string) string {
 	return text
 }
 
-func (hs *HttpService) queryDB(req *http.Request, form bool) (string, error) { // 从请求中解析出是哪个数据库
+func (hs *HttpService) queryDB(req *http.Request, form bool) (string, error) { // 从请求中解析出是哪个数据库并判断数据库是否合法
 	var db string
 	if form {
 		db = req.FormValue("db")

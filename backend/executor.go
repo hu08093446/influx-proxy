@@ -66,10 +66,10 @@ func QueryFromQL(w http.ResponseWriter, req *http.Request, ip *Proxy, tokens []s
 	if err != nil {
 		return nil, ErrGetMeasurement
 	}
-	key := GetKey(db, meas)
+	key := GetKey(db, meas) // key用来判断请求需要路由到哪个influxdb，从这里可以看出：influx-proxy用于一致性hash的字段只有数据库名称和meas名称，并不包括tags
 
 	// pass non-active, rewriting or write-only.
-	perms := rand.Perm(len(ip.Circles))
+	perms := rand.Perm(len(ip.Circles)) // 生成一个伪随机排列，再结合下面的for循环，相当于随机选取一个circle完成查询
 	for _, p := range perms {
 		be := ip.Circles[p].GetBackend(key)
 		if !be.IsActive() || be.IsRewriting() || be.IsWriteOnly() {

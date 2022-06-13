@@ -147,7 +147,7 @@ func (ip *Proxy) Write(p []byte, db, rp, precision string) (err error) {
 		case io.EOF, nil:
 			err = nil
 		}
-		if len(line) == 0 { // fixme 如果出现空行，后面的就不再读取了吗？
+		if len(line) == 0 { // 如果出现空行，后面的就不再读取了吗？ 答：空行如果有空格则长度不是0，不会break，如果没有空格，那么buf.ReadBytes('\n')会直接跳到下一行
 			break
 		}
 		line = bytes.TrimSpace(line)
