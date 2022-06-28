@@ -66,7 +66,6 @@ func NewBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (ib *Backend) {
 		panic(err)
 	}
 
-	// fixme 这个协程的工作内容待研究
 	go ib.worker()
 	return
 }

@@ -44,7 +44,7 @@ type QueryResult struct {
 }
 
 type HttpBackend struct { // nolint:golint
-	client      *http.Client
+	client      *http.Client // fixme 这里的client和下面的transport都是用来发起请求的，功能差不多呀，那为啥搞两个嘞？
 	transport   *http.Transport
 	Name        string
 	Url         string // nolint:golint
