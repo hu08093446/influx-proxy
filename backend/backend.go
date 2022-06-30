@@ -119,6 +119,7 @@ func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
 	if _, ok := ib.buffers[db]; !ok {
 		ib.buffers[db] = make(map[string]*CacheBuffer)
 	}
+	// 不同的保存策略要分开存储，不能混在一起
 	if _, ok := ib.buffers[db][rp]; !ok {
 		ib.buffers[db][rp] = &CacheBuffer{Buffer: &bytes.Buffer{}}
 	}
@@ -168,7 +169,7 @@ func (ib *Backend) FlushBuffer(db, rp string) {
 	}
 
 	ib.wg.Add(1)
-	// 这里使用了ants协程库
+	// 这里使用了ants协程库，当pool中的协程都在忙碌时，此时提交任务会阻塞
 	ib.pool.Submit(func() {
 		defer ib.wg.Done()
 		var buf bytes.Buffer

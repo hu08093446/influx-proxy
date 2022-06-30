@@ -139,7 +139,7 @@ func (ip *Proxy) Write(p []byte, db, rp, precision string) (err error) {
 	buf := bytes.NewBuffer(p)
 	var line []byte
 	for {
-		line, err = buf.ReadBytes('\n') // 果然，数据是一行一行的处理的
+		line, err = buf.ReadBytes('\n') // 果然，数据是一行一行的处理的，因为每一行数据的measurement可能是不同的，这样数据可能会保存到不同的influxDB实例中
 		switch err {
 		default:
 			log.Printf("error: %s", err)
