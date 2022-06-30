@@ -301,6 +301,7 @@ func (hb *HttpBackend) ReadProm(req *http.Request, w http.ResponseWriter) (err e
 	return
 }
 
+// 这种我理解必须要通过HttpBackend进行访问，相当于java中对象的方法
 func (hb *HttpBackend) Query(req *http.Request, w http.ResponseWriter, decompress bool) (qr *QueryResult) {
 	if req.Header.Get(HeaderQueryOrigin) == QueryParallel {
 		defer req.Body.Close()
