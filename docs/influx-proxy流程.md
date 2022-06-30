@@ -22,5 +22,12 @@
 ![ping接口时序](./image/ping1.png)
 
 ### query接口处理流程
-* 接口流程图如下如下:
+> 并不是只有查询才走query，一些drop操作、alter操作也会走query接口
+> 可以是post方式，也可以get方式
+* 接口流程图如下:
 ![query接口流程](./image/query1.png)
+
+### write接口处理流程
+> 必须是post方式
+* 接口流程图如下：
+
