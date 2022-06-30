@@ -34,3 +34,16 @@
 ![write接口流程](./image/write1.png)
 
 在flush的过程中，会对influxdb实例进行写入，如果写入失败了，则会将本次缓存中的数据写入本地磁盘文件，然后会有协程周期性把数据从磁盘文件写入influxdb
+
+### health接口处理流程
+这个流程比较简单，暂时先略过
+
+### encrypt、decrypt接口
+就是单纯的加密、解密，流程比较简单，掠过
+
+### replica接口
+就是简单的判断某个measurement在集群中有几个副本，分别位于哪个circle的哪个Backend上
+
+### rebalance接口
+> 本接口的是在增加或缩减influxdb实例数之后进行数据再平衡的动作
+
