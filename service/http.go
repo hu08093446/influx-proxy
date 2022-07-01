@@ -251,6 +251,7 @@ func (hs *HttpService) HandlerRebalance(w http.ResponseWriter, req *http.Request
 			hs.tx.CircleStates[circleId].Stats[bkcfg.Url] = &transfer.Stats{}
 		}
 	}
+	// 后面...表示把整个切片都加进去
 	backends = append(backends, hs.ip.Circles[circleId].Backends...)
 
 	if hs.tx.CircleStates[circleId].Transferring {
