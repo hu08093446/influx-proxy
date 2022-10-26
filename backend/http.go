@@ -156,6 +156,16 @@ func (hb *HttpBackend) SetBasicAuth(req *http.Request) {
 	SetBasicAuth(req, hb.username, hb.password, hb.authEncrypt)
 }
 
+func (hb *HttpBackend) SetTokenAuth(req *http.Request) {
+	var auth string
+	if hb.authEncrypt {
+		auth = fmt.Sprintf("Token %s:%s", util.AesDecrypt(hb.username), util.AesDecrypt(hb.password))
+	} else {
+		auth = fmt.Sprintf("Token %s:%s", hb.username, hb.password)
+	}
+	req.Header.Set("Authorization", auth)
+}
+
 func (hb *HttpBackend) CheckActive() {
 	for hb.running.Load().(bool) {
 		hb.active.Store(hb.Ping())
@@ -298,6 +308,36 @@ func (hb *HttpBackend) ReadProm(req *http.Request, w http.ResponseWriter) (err e
 	return
 }
 
+func (hb *HttpBackend) QueryFlux(req *http.Request, w http.ResponseWriter) (err error) {
+	if hb.username != "" || hb.password != "" {
+		hb.SetTokenAuth(req)
+	}
+
+	req.URL, err = url.Parse(hb.Url + "/api/v2/query")
+	if err != nil {
+		log.Print("internal url parse error: ", err)
+		return
+	}
+
+	resp, err := hb.transport.RoundTrip(req)
+	if err != nil {
+		log.Printf("flux query error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	CopyHeader(w.Header(), resp.Header)
+
+	p, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("flux read body error: %s", err)
+		return
+	}
+	w.WriteHeader(resp.StatusCode)
+	_, err = w.Write(p)
+	return
+}
+
 func (hb *HttpBackend) Query(req *http.Request, w http.ResponseWriter, decompress bool) (qr *QueryResult) {
 	qr = &QueryResult{}
 	if len(req.Form) == 0 {
@@ -384,17 +424,21 @@ func (hb *HttpBackend) GetDatabases() []string {
 	return hb.GetSeriesValues("", "show databases")
 }
 
+func (hb *HttpBackend) GetRetentionPolicies(db string) []string {
+	return hb.GetSeriesValues(db, "show retention policies")
+}
+
 func (hb *HttpBackend) GetMeasurements(db string) []string {
 	return hb.GetSeriesValues(db, "show measurements")
 }
 
-func (hb *HttpBackend) GetTagKeys(db, meas string) []string {
-	return hb.GetSeriesValues(db, fmt.Sprintf("show tag keys from \"%s\"", util.EscapeIdentifier(meas)))
+func (hb *HttpBackend) GetTagKeys(db, rp, meas string) []string {
+	return hb.GetSeriesValues(db, fmt.Sprintf("show tag keys from \"%s\".\"%s\"", util.EscapeIdentifier(rp), util.EscapeIdentifier(meas)))
 }
 
-func (hb *HttpBackend) GetFieldKeys(db, meas string) map[string][]string {
+func (hb *HttpBackend) GetFieldKeys(db, rp, meas string) map[string][]string {
 	fieldKeys := make(map[string][]string)
-	q := fmt.Sprintf("show field keys from \"%s\"", util.EscapeIdentifier(meas))
+	q := fmt.Sprintf("show field keys from \"%s\".\"%s\"", util.EscapeIdentifier(rp), util.EscapeIdentifier(meas))
 	qr := hb.Query(NewQueryRequest("GET", db, q, ""), nil, true)
 	if qr.Err != nil {
 		return fieldKeys

@@ -10,9 +10,9 @@
 
 This project adds a basic high availability and consistent hash layer to InfluxDB.
 
-NOTE: influx-proxy must be built with Go 1.14+ with Go module support, don't implement udp.
+NOTE: influx-proxy must be built with Go 1.16+ with Go module support, don't implement udp.
 
-NOTE: [InfluxDB Cluster](https://github.com/chengshiwen/influxdb-cluster) for replacing [InfluxDB Enterprise](https://docs.influxdata.com/enterprise_influxdb/v1.8/) is coming, which is better than InfluxDB Proxy.
+NOTE: [InfluxDB Cluster](https://github.com/chengshiwen/influxdb-cluster) - open source alternative to [InfluxDB Enterprise](https://docs.influxdata.com/enterprise_influxdb/v1.8/) has been released, which is better than InfluxDB Proxy.
 
 ## Why
 
@@ -29,6 +29,8 @@ Since the InfluxDB Proxy v1 is limited by the only `ONE` database and the `KEYMA
 ## Features
 
 * Support query and write.
+* Support /api/v2 endpoints.
+* Support flux language query.
 * Support some cluster influxql.
 * Filter some dangerous influxql.
 * Transparent for client, like cluster for client.
@@ -42,14 +44,14 @@ Since the InfluxDB Proxy v1 is limited by the only `ONE` database and the `KEYMA
 * Support prometheus remote read and write.
 * Support authentication and https.
 * Support authentication encryption.
-* Support health status query.
+* Support health status check.
 * Support database whitelist.
 * Support version display.
 * Support gzip.
 
 ## Requirements
 
-* Golang >= 1.14 with Go module support
+* Golang >= 1.16 with Go module support
 * InfluxDB 1.2 - 1.8 (For InfluxDB 2.x, please visit branch [influxdb-v2](https://github.com/chengshiwen/influx-proxy/tree/influxdb-v2))
 
 ## Usage
@@ -91,6 +93,8 @@ $ # build current platform
 $ make build
 $ # build linux amd64
 $ make linux
+$ # cross-build all platforms
+$ make release
 ```
 
 ## Development
@@ -175,6 +179,7 @@ The configuration settings are as follows:
 * `auth_encrypt`: whether to encrypt auth (username/password), default is `false`
 * `write_tracing`: enable logging for the write, default is `false`
 * `query_tracing`: enable logging for the query, default is `false`
+* `pprof_enabled`: enable `/debug/pprof` HTTP endpoint, default is `false`
 * `https_enabled`: enable https, default is `false`
 * `https_cert`: the ssl certificate to use when https is enabled, default is `empty`
 * `https_key`: use a separate private key location, default is `empty`
@@ -217,7 +222,8 @@ Only support match the following commands.
 * `delete from`
 * `drop series from`
 * `drop measurement`
-* `on clause` (the `db` parameter takes precedence when the parameter is set in `/query` http endpoint)
+* `on clause`
+* `from clause` like `from <db>.<rp>.<measurement>`
 
 ## HTTP Endpoints
 

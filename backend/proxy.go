@@ -5,9 +5,7 @@
 package backend
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -88,7 +86,28 @@ func (ip *Proxy) GetHealth(stats bool) []interface{} {
 }
 
 func (ip *Proxy) IsForbiddenDB(db string) bool {
-	return db == "_internal" || (len(ip.dbSet) > 0 && !ip.dbSet[db])
+	return len(ip.dbSet) > 0 && !ip.dbSet[db]
+}
+
+func (ip *Proxy) QueryFlux(w http.ResponseWriter, req *http.Request, qr *QueryRequest) (err error) {
+	var bucket, meas string
+	if qr.Query != "" {
+		bucket, meas, err = ScanQuery(qr.Query)
+	} else if qr.Spec != nil {
+		bucket, meas, err = ScanSpec(qr.Spec)
+	}
+	if err != nil {
+		return
+	}
+	if bucket == "" {
+		return ErrGetBucket
+	} else if ip.IsForbiddenDB(bucket) {
+		return fmt.Errorf("database forbidden: %s", bucket)
+	}
+	if meas == "" {
+		return ErrGetMeasurement
+	}
+	return QueryFlux(w, req, ip, bucket, meas)
 }
 
 func (ip *Proxy) Query(w http.ResponseWriter, req *http.Request) (body []byte, err error) {
@@ -104,9 +123,9 @@ func (ip *Proxy) Query(w http.ResponseWriter, req *http.Request) (body []byte, e
 
 	checkDb, showDb, alterDb, db := CheckDatabaseFromTokens(tokens)
 	if !checkDb {
-		db = req.FormValue("db")
+		db, _ = GetDatabaseFromTokens(tokens)
 		if db == "" {
-			db, _ = GetDatabaseFromTokens(tokens)
+			db = req.FormValue("db")
 		}
 	}
 	if !showDb {
@@ -132,24 +151,27 @@ func (ip *Proxy) Query(w http.ResponseWriter, req *http.Request) (body []byte, e
 }
 
 func (ip *Proxy) Write(p []byte, db, rp, precision string) (err error) {
-	buf := bytes.NewBuffer(p)
-	var line []byte
-	for {
-		line, err = buf.ReadBytes('\n')
-		switch err {
-		default:
-			log.Printf("error: %s", err)
-			return
-		case io.EOF, nil:
-			err = nil
-		}
-		if len(line) == 0 {
-			break
-		}
-		line = bytes.TrimSpace(line)
-		if len(line) == 0 {
+	var (
+		pos   int
+		block []byte
+	)
+	for pos < len(p) {
+		pos, block = ScanLine(p, pos)
+		pos++
+
+		if len(block) == 0 {
 			continue
 		}
+		start := SkipWhitespace(block, 0)
+		if start >= len(block) || block[start] == '#' {
+			continue
+		}
+		if block[len(block)-1] == '\n' {
+			block = block[:len(block)-1]
+		}
+
+		line := make([]byte, len(block[start:]))
+		copy(line, block[start:])
 		ip.WriteRow(line, db, rp, precision)
 	}
 	return
@@ -163,7 +185,7 @@ func (ip *Proxy) WriteRow(line []byte, db, rp, precision string) {
 		return
 	}
 	if !RapidCheck(nanoLine[len(meas):]) {
-		log.Printf("invalid format, drop data: %s %s %s %s", db, rp, precision, string(line))
+		log.Printf("invalid format, db: %s, rp: %s, precision: %s, line: %s", db, rp, precision, string(line))
 		return
 	}
 
@@ -178,7 +200,7 @@ func (ip *Proxy) WriteRow(line []byte, db, rp, precision string) {
 	for _, be := range backends {
 		err = be.WritePoint(point)
 		if err != nil {
-			log.Printf("write data to buffer error: %s, %s, %s, %s, %s, %s", err, be.Url, db, rp, precision, string(line))
+			log.Printf("write data to buffer error: %s, url: %s, db: %s, rp: %s, precision: %s, line: %s", err, be.Url, db, rp, precision, string(line))
 		}
 	}
 }
@@ -199,7 +221,7 @@ func (ip *Proxy) WritePoints(points []models.Point, db, rp string) error {
 		for _, be := range backends {
 			err = be.WritePoint(point)
 			if err != nil {
-				log.Printf("write point to buffer error: %s, %s, %s, %s, %s", err, be.Url, db, rp, pt.String())
+				log.Printf("write point to buffer error: %s, url: %s, db: %s, rp: %s, point: %s", err, be.Url, db, rp, pt.String())
 			}
 		}
 	}
@@ -207,7 +229,7 @@ func (ip *Proxy) WritePoints(points []models.Point, db, rp string) error {
 }
 
 func (ip *Proxy) ReadProm(w http.ResponseWriter, req *http.Request, db, metric string) (err error) {
-	return ReadPromQL(w, req, ip, db, metric)
+	return ReadProm(w, req, ip, db, metric)
 }
 
 func (ip *Proxy) Close() {

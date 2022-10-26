@@ -1,5 +1,55 @@
 #!/bin/bash
 
+# echo "v2 query test:"
+
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db1") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu1")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db1") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu2")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu3")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu4")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d "from(bucket:\"db1\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"measurement with spaces, commas and 'quotes'\")"
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d "from(bucket:\"db1\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"'measurement with spaces, commas and 'quotes''\")"
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "measurement with spaces, commas and \"quotes\"")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "\"measurement with spaces, commas and \"quotes\"\"")'
+
+
+# echo ""
+# echo "v2 json test:"
+
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/json' -d '{"query": "from(bucket:\"db1\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"cpu1\")"}'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/json' -d '{"query": "from(bucket:\"db1\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"cpu2\")"}'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/json' -d '{"query": "from(bucket:\"db2\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"cpu3\")"}'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/json' -d '{"query": "from(bucket:\"db2\") |> range(start:0) |> filter(fn: (r) => r._measurement == \"cpu4\")"}'
+
+
+# echo ""
+# echo "v2 error test:"
+
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d ''
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db1")'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db1") |> range(start:0)'
+# curl -X POST 'http://127.0.0.1:7076/api/v2/query' -H 'Content-type: application/vnd.flux' -d 'from(bucket:"db1") |> filter(fn: (r) => r._measurement == "cpu1")'
+
+
+# echo ""
+# echo "v2 gzip test:"
+
+# queries=(
+#     'from(bucket:"db1") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu1")'
+#     'from(bucket:"db1") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu2")'
+#     'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu3")'
+#     'from(bucket:"db2") |> range(start:0) |> filter(fn: (r) => r._measurement == "cpu4")'
+# )
+
+# len=${#queries[*]}
+# i=0
+# while (($i<$len)); do
+#     query=${queries[$i]}
+#     curl -X POST -s 'http://127.0.0.1:7076/api/v2/query' -H "Accept-Encoding: gzip" -H 'Content-type: application/vnd.flux' -d "$query" | gzip -d
+#     i=$(($i+1))
+# done
+
+
 echo "query test:"
 
 curl -X POST 'http://127.0.0.1:7076/query' --data-urlencode 'q=CREATE DATABASE db1'
@@ -15,6 +65,8 @@ curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=select * from c
 curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=select * from cpu2'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from rp2.cpu3;'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from rp2.cpu4'
+curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=select * from \"measurement with spaces, commas and 'quotes'\""
+curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=select * from \"'measurement with spaces, commas and 'quotes''\""
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from "measurement with spaces, commas and \"quotes\""'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from "\"measurement with spaces, commas and \"quotes\"\""'
 
@@ -70,7 +122,6 @@ curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=drop series fro
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=drop measurement'
 curl -G 'http://127.0.0.1:7076/query' --data-urlencode 'q=CREATE DATABASE'
 curl -G 'http://127.0.0.1:7076/query' --data-urlencode 'q=drop database '
-curl -G 'http://127.0.0.1:7076/query' --data-urlencode 'q=SHOW retention policies on newdb'
 curl -G 'http://127.0.0.1:7076/query' --data-urlencode 'q=show TAG keys test from mem'
 
 
@@ -125,12 +176,16 @@ curl -X POST 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=delete fro
 curl -X POST 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=drop series from cpu2'
 curl -X POST 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=drop measurement cpu3'
 curl -X POST 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=drop series from cpu4'
+curl -X POST 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=delete from \"measurement with spaces, commas and 'quotes'\""
+curl -X POST 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=drop measurement \"'measurement with spaces, commas and 'quotes''\""
 curl -X POST 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=delete from "measurement with spaces, commas and \"quotes\""'
 curl -X POST 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=drop measurement "\"measurement with spaces, commas and \"quotes\"\""'
 curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=select * from cpu1;'
 curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode 'q=select * from cpu2'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from rp2.cpu3;'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from rp2.cpu4'
+curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=select * from \"measurement with spaces, commas and 'quotes'\""
+curl -G 'http://127.0.0.1:7076/query?db=db1' --data-urlencode "q=select * from \"'measurement with spaces, commas and 'quotes''\""
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from "measurement with spaces, commas and \"quotes\""'
 curl -G 'http://127.0.0.1:7076/query?db=db2' --data-urlencode 'q=select * from "\"measurement with spaces, commas and \"quotes\"\""'
 curl -X POST 'http://127.0.0.1:7076/query' --data-urlencode 'q=DROP RETENTION POLICY "24h.events" on "db1"'
