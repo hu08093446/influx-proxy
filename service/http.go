@@ -73,6 +73,7 @@ func (hs *HttpService) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/resync", hs.HandlerResync)
 	mux.HandleFunc("/cleanup", hs.HandlerCleanup)
 	mux.HandleFunc("/transfer/state", hs.HandlerTransferState)
+	// 在有多个influx-proxy的情况下，这个接口拿到的数据可能是不对的，因为统计数据并没有进行广播
 	mux.HandleFunc("/transfer/stats", hs.HandlerTransferStats)
 	mux.HandleFunc("/api/v1/prom/read", hs.HandlerPromRead)
 	mux.HandleFunc("/api/v1/prom/write", hs.HandlerPromWrite)

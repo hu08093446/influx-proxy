@@ -113,6 +113,7 @@ func (tx *Transfer) getDatabases() []string {
 	return dbs
 }
 
+// 在所有influxDB中都创建指定数据库（重复创建数据库属于无效操作，不影响原数据库）
 func (tx *Transfer) createDatabases(dbs []string) ([]string, error) {
 	if len(dbs) == 0 {
 		dbs = tx.getDatabases()
@@ -122,6 +123,8 @@ func (tx *Transfer) createDatabases(dbs []string) ([]string, error) {
 		for _, cs := range tx.CircleStates {
 			backends = append(backends, cs.Backends...)
 		}
+		// 这里让所有Circle中的所有backend都进行了创建数据库操作，虽然没啥问题，但是在部分场景下还是有些多余
+		// 但作者可能是为了该方法的通用性，可以理解
 		for _, db := range dbs {
 			q := fmt.Sprintf("create database \"%s\"", util.EscapeIdentifier(db))
 			req := backend.NewQueryRequest("POST", "", q, "")
@@ -296,6 +299,7 @@ func (tx *Transfer) transfer(src *backend.Backend, dsts []*backend.Backend, db, 
 		fieldKeys := src.GetFieldKeys(db, meas)
 		fieldMap = reformFieldKeys(fieldKeys)
 	}()
+	// 在这里进行wait，就是让上面连个查询的动作并发进行
 	wg.Wait()
 	return tx.write(ch, dsts, db, meas, tagMap, fieldMap)
 }
@@ -416,6 +420,8 @@ func (tx *Transfer) Recovery(fromCircleId, toCircleId int, backendUrls []string,
 	fcs := tx.CircleStates[fromCircleId]
 	tcs := tx.CircleStates[toCircleId]
 	tx.resetCircleStates()
+
+	// todo 下面这种操作、反操作的写法很不错，但是有个问题：如果defer操作过程中出现了异常怎么办？
 	tx.broadcastTransferring(tcs, true)
 	defer tx.broadcastTransferring(tcs, false)
 
@@ -429,6 +435,7 @@ func (tx *Transfer) Recovery(fromCircleId, toCircleId int, backendUrls []string,
 			backendUrlSet.Add(b.Url)
 		}
 	}
+
 	for _, be := range fcs.Backends {
 		fcs.wg.Add(1)
 		go tx.runTransfer(fcs, be, dbs, tx.runRecovery, tcs, backendUrlSet)
@@ -546,6 +553,8 @@ func (tx *Transfer) broadcastResyncing(resyncing bool) {
 	}
 }
 
+// 当有多个influx-proxy做负载均衡时，需要把circle的状态广播给所有的influx-proxy，这样其他的influx-proxy也会知道该circle当前处于操作状态
+// 防止请求落在其他influx-proxy上的时候，由于状态没更新导致错误
 func (tx *Transfer) broadcastTransferring(cs *CircleState, transferring bool) {
 	cs.Transferring = transferring
 	cs.SetTransferIn(transferring)

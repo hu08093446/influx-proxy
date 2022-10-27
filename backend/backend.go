@@ -21,7 +21,7 @@ type CacheBuffer struct {
 	Counter int
 }
 
-// 每个Backend对应一个InfluxDB示例
+// Backend 每个Backend对应一个InfluxDB示例
 type Backend struct {
 	*HttpBackend
 	fb   *FileBackend
