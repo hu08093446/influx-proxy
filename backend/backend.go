@@ -113,6 +113,36 @@ func (ib *Backend) WritePoint(point *LinePoint) (err error) {
 	return
 }
 
+func (ib *Backend) WritePointSync(point *LinePoint) (err error) {
+	db, rp, line := point.Db, point.Rp, point.Line
+	if !ib.IsRunning() {
+		return io.ErrClosedPipe
+	}
+	if ib.IsActive() {
+		err = ib.WriteCompressed(db, rp, line)
+		switch err {
+		case nil:
+			return
+		case ErrBadRequest:
+			log.Printf("bad request, drop all data")
+			return
+		case ErrNotFound:
+			log.Printf("bad backend, drop all data")
+			return
+		default:
+			log.Printf("write http error: %s %s %s, length: %d", ib.Url, db, rp, len(line))
+		}
+	}
+
+	b := bytes.Join([][]byte{[]byte(url.QueryEscape(db)), []byte(url.QueryEscape(rp)), line}, []byte{' '})
+	// 如果调用backend接口出现问题，这里会将请求写入到文件中
+	err = ib.fb.Write(b)
+	if err != nil {
+		log.Printf("write db and data to file error with db: %s, rp: %s, length: %d error: %s", db, rp, len(line), err)
+		return
+	}
+}
+
 func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
 	db, rp, line := point.Db, point.Rp, point.Line
 	// it's thread-safe since ib.buffers is only used (read-write) in ib.worker() goroutine
