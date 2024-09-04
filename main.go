@@ -42,7 +42,6 @@ func printVersion() {
 }
 
 // 添加源码注释
-// 妈的，提交不上去
 func main() {
 	if version {
 		printVersion()

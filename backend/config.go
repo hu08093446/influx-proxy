@@ -13,13 +13,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-// todo 这里是直接初始化为字符串了吗？ 为啥没用":="这个操作符？
+// 这里是直接初始化为字符串了， 因为有了var，所以不需要":="这个操作符
 var (
 	Version   = "1.1.1"
 	GitCommit = "not build"
 	BuildTime = "not build"
 )
 
+// todo errors.New返回应该是指针类型，error是指针类型吗？
 var (
 	ErrEmptyCircles          = errors.New("circles cannot be empty")
 	ErrEmptyBackends         = errors.New("backends cannot be empty")
