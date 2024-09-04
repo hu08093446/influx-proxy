@@ -141,6 +141,7 @@ func (ib *Backend) WritePointSync(point *LinePoint) (err error) {
 		log.Printf("write db and data to file error with db: %s, rp: %s, length: %d error: %s", db, rp, len(line), err)
 		return
 	}
+	return
 }
 
 func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
