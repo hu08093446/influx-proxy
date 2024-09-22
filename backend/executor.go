@@ -82,6 +82,7 @@ func QueryFromQL(w http.ResponseWriter, req *http.Request, ip *Proxy, tokens []s
 		err = qr.Err
 	}
 
+	// note-q 这里没有很懂，上面已经对所有的circle做了一次查询，如果没有查到，这里重新查一遍的意义是什么？
 	// pass non-active, non-writing (excluding rewriting and write-only).
 	backends := ip.GetBackends(key)
 	for _, be := range backends {

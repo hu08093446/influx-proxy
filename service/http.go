@@ -93,6 +93,7 @@ func (hs *HttpService) HandlerQuery(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// note-q 这里必须是form格式的参数吗？
 	db := req.FormValue("db")
 	q := req.FormValue("q")
 	body, err := hs.ip.Query(w, req)

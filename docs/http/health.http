@@ -1,0 +1,4 @@
+GET http://localhost:7076/health?a=1&b=2&stats=true
+Accept: application/json
+
+###

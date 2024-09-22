@@ -70,6 +70,7 @@ func (ic *Circle) GetBackend(key string) *Backend {
 	}
 	value, _ := ic.router.Get(key)
 	be := ic.mapToBackend[value]
+	// note-q 这里做缓存有必要吗？个人感觉一致性哈希的速度不会太慢
 	ic.routerCache.Store(key, be)
 	return be
 }
