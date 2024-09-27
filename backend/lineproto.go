@@ -52,7 +52,7 @@ func ScanTime(buf []byte) (int, bool) {
 	return i, i > 0 && i < len(buf)-1 && (buf[i] == ' ' || buf[i] == 0)
 }
 
-// 这个方法是在请求没有带时间的时候，帮它把时间戳加上
+// influxdb默认的是ns，所以如果时间精度不是ns，转换成ns
 func AppendNano(line []byte, precision string) []byte {
 	// 去掉头尾的空格
 	line = bytes.TrimSpace(line)
@@ -72,6 +72,7 @@ func AppendNano(line []byte, precision string) []byte {
 			return append(line[:pos+1], Int64ToBytes(nano)...)
 		}
 	} else {
+		// 在请求没有带时间的时候，帮它把时间戳加上
 		return append(line, []byte(" "+strconv.FormatInt(time.Now().UnixNano(), 10))...)
 	}
 }
