@@ -34,7 +34,7 @@ type Backend struct {
 	rewriteTicker   *time.Ticker
 	chWrite         chan *LinePoint
 	// 目前看这个chTimer的作用是这样的：每次write请求在经过一致性hash分发之后不是立刻发送给influxDB实例的，而是在缓存里累积到一定数量才发送的，那如果发送速率比较慢
-	// 数量达不到，请求就会一直放在缓存里发布出去，这个时候就需要有时间限制，隔一段时间检查一次，保证累积在缓存中但是总数量没有达标的请求在延迟
+	// 数量达不到，请求就会一直放在缓存里发不出去，这个时候就需要有时间限制，隔一段时间检查一次，保证累积在缓存中但是总数量没有达标的请求在延迟
 	// 较短的时间后也能发送出去   它这里没有使用定时器而使用这种方式是有道理的，个人认为是降低资源消耗，因为只要请求数量达标，这个chTimer就不会
 	// 被触发，只有在请求比较缓慢的时候才可能被触发。这个设计还是比较巧妙地。
 	chTimer <-chan time.Time
@@ -181,6 +181,7 @@ func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
 	case cb.Counter >= ib.flushSize:
 		ib.FlushBuffer(db, rp)
 	case ib.chTimer == nil:
+		// 如果缓存没满，那也不能一直等着，到了一定时间也得发送给influxdb，保证存储的及时性
 		ib.chTimer = time.After(time.Duration(ib.flushTime) * time.Second)
 	}
 	return
@@ -253,6 +254,7 @@ func (ib *Backend) RewriteIdle() {
 	// 这里的rewriting可以保证：如果上一次重写没有写完，那么下一次不会开始
 	if !ib.IsRewriting() && ib.fb.IsData() {
 		ib.SetRewriting(true)
+		// note rewrite是另外起的协程，对正常的写入流程没有影响
 		go ib.RewriteLoop()
 	}
 }
@@ -312,7 +314,7 @@ func (ib *Backend) Rewrite() (err error) {
 		err = nil
 	default:
 		log.Printf("rewrite http error: %s %s %s, length: %d", ib.Url, db, rp, len(p[1]))
-
+		// 出现写入influxdb失败，则将当前消费的offset重置到本次读取之前
 		err = ib.fb.RollbackMeta()
 		if err != nil {
 			log.Printf("rollback meta error: %s", err)

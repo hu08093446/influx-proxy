@@ -30,12 +30,14 @@ func NewFileBackend(filename string, datadir string) (fb *FileBackend, err error
 	}
 
 	pathname := filepath.Join(datadir, filename)
+	// note 生产者只需要不断地在dat文件末尾添加数据就行了，所以采用append模式
 	fb.producer, err = os.OpenFile(pathname+".dat", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		log.Printf("open producer error: %s %s", fb.filename, err)
 		return
 	}
 
+	// note 消费者对dat文件只读不写，读取的位移记录在rec文件中
 	fb.consumer, err = os.OpenFile(pathname+".dat", os.O_RDONLY, 0644)
 	if err != nil {
 		log.Printf("open consumer error: %s %s", fb.filename, err)
@@ -48,9 +50,12 @@ func NewFileBackend(filename string, datadir string) (fb *FileBackend, err error
 		return
 	}
 
+	// note 这个方法中会设置消费者的位移位置（如果是全新的rec文件，则不会设置）
 	fb.RollbackMeta()
+	// note 生产者就直接从末尾开始
 	producerOffset, _ := fb.producer.Seek(0, io.SeekEnd)
 	offset, _ := fb.consumer.Seek(0, io.SeekCurrent)
+	// note 生产者的位移大于消费者，说明dat中有数据没有消费，此时对dataFlag进行设置
 	fb.dataflag = producerOffset > offset
 	return
 }
@@ -81,6 +86,7 @@ func (fb *FileBackend) Write(p []byte) (err error) {
 		return
 	}
 
+	// note 设置标识，标识文件里有新的数据需要处理了
 	fb.dataflag = true
 	return
 }
@@ -125,12 +131,14 @@ func (fb *FileBackend) RollbackMeta() (err error) {
 	var offset int64
 	err = binary.Read(fb.meta, binary.BigEndian, &offset)
 	if err != nil {
+		// note 最开始第一次读取的时候，meta文件是空的，所以会返回EOF错误
 		if err != io.EOF {
 			log.Printf("read meta error: %s %s", fb.filename, err)
 		}
 		return
 	}
-
+	// note meta中记录的是消费的offset，所以拿到offset后设置当前的消费位移
+	// note 那为什么没有生产的offset呢？我理解的是，生产只需要在dat文件末尾添加就行了，不需要记录什么offset
 	_, err = fb.consumer.Seek(offset, io.SeekStart)
 	if err != nil {
 		log.Printf("seek consumer error: %s %s", fb.filename, err)
